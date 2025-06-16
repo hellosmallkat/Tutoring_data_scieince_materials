@@ -1,0 +1,258 @@
+---
+title: "final project help though code"
+output: pdf_document
+date: "2025-06-16"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+
+```{r setup, include=FALSE}
+
+library(googlesheets4)
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+library(tidyverse)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+
+data <- read_sheet("https://docs.google.com/spreadsheets/d/1AE9tcfLv675DlQpGkUFrV-DJXjipq-s4-03tYhQRR_w/edit?gid=44219090#gid=44219090")
+Uk_diagonisis <-read_sheet("https://docs.google.com/spreadsheets/d/17g8UXHUCyU1tCTt5jk4Ol_JUpDfkm_XZ271f6JpauBk/edit?gid=35895440#gid=35895440")
+head(Uk_diagonisis)
+maly_demo <- read_sheet("https://docs.google.com/spreadsheets/d/1DrdE3rCPXZm6DUtrmhjNJnIY2FSpVnTeGSVT3tI7X3k/edit?gid=0#gid=0")
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+```{r}
+
+
+# Read the CSV file
+data <- read_sheet("https://docs.google.com/spreadsheets/d/1AE9tcfLv675DlQpGkUFrV-DJXjipq-s4-03tYhQRR_w/edit?gid=44219090#gid=44219090")
+
+colnames(data) <- make.names(colnames(data))
+
+# Optional: Filter to only "Region"-level data (not hospitals)
+region_data <- data %>%
+  filter(is.na(Joined.Audit) | Joined.Audit == "-")
+
+ggplot(region_data, aes(x = reorder(Region...Provider.Name, Percentage.taking.5mg.folic.acid),
+                        y = Percentage.taking.5mg.folic.acid)) +
+  geom_col(fill = "tomato") +
+  coord_flip() +
+  labs(title = "5mg Folic Acid Usage by Region",
+       x = "Region",
+       y = "% Taking 5mg Folic Acid") +
+  theme_minimal()
+ggplot(region_data, aes(x = reorder(Region...Provider.Name, Percentage.with.early.pregnancy.HbA1c..48),
+                        y = Percentage.with.early.pregnancy.HbA1c..48)) +
+  geom_col(fill = "skyblue") +
+  coord_flip() +
+  labs(title = "Early Pregnancy HbA1c <48% by Region",
+       x = "Region",
+       y = "% HbA1c <48 (Early)") +
+  theme_minimal()
+ggplot(region_data, aes(x = reorder(Region...Provider.Name, Percentage.with.first.contact.before.10.weeks.gestation),
+                        y = Percentage.with.first.contact.before.10.weeks.gestation)) +
+  geom_col(fill = "orange") +
+  coord_flip() +
+  labs(title = "First Contact Before 10 Weeks by Region",
+       x = "Region",
+       y = "% First Contact <10 Weeks") +
+  theme_minimal()
+ggplot(region_data, aes(x = reorder(Region...Provider.Name, Percentage.with.third.trimester.HbA1c..48),
+                        y = Percentage.with.third.trimester.HbA1c..48)) +
+  geom_col(fill = "purple") +
+  coord_flip() +
+  labs(title = "Third Trimester HbA1c <48% by Region",
+       x = "Region",
+       y = "% HbA1c <48 (3rd Trimester)") +
+  theme_minimal()
+ggplot(region_data, aes(x = reorder(Region...Provider.Name, Percentage.of.babies.admitted.to.neonatal.unit),
+                        y = Percentage.of.babies.admitted.to.neonatal.unit)) +
+  geom_col(fill = "darkgreen") +
+  coord_flip() +
+  labs(title = "Neonatal Unit Admissions by Region",
+       x = "Region",
+       y = "% Admitted to Neonatal Unit") +
+  theme_minimal()
+
+
+
+```
+
+```{r}
+library(tidyverse)
+library(googlesheets4)
+
+# Step 1: Read the sheet (with original column names)
+stroke_data <- read_sheet("https://docs.google.com/spreadsheets/d/1McWV5bB22dQ7XHKdXupseV3FObMtG2KrMQsoy41NKcA/edit#gid=0")
+colnames(stroke_data)
+# Step 2: Reshape the data without renaming
+stroke_long <- stroke_data %>%
+  select(Category, 'Female...2', 'Female...3' , 'Male...5', 'Male...6') %>%
+  pivot_longer(cols = -Category, names_to = "Group", values_to = "Raw") %>%
+  mutate(
+    Sex = case_when(
+      str_detect(Group, "Female") ~ "Female",
+      str_detect(Group, "Male") ~ "Male"
+    ),
+    Response = case_when(
+      str_detect(Group, "\\.\\.\\.2|\\.\\.\\.5") ~ "Yes",
+      str_detect(Group, "\\.\\.\\.3|\\.\\.\\.6") ~ "No"
+    ),
+    Count = as.numeric(str_extract(Raw, "^\\d+"))
+  ) %>%
+  filter(!is.na(Count))  # Remove rows where no count was found
+
+# Step 3: Filter first by sex
+female_data <- stroke_long %>% filter(Sex == "Female")
+male_data   <- stroke_long %>% filter(Sex == "Male")
+
+# Step 4: Plot Female Chart
+ggplot(female_data, aes(x = Category, y = Count, fill = Response)) +
+  geom_col(position = "stack") +
+  labs(title = "Female Stroke Characteristics", x = "", y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Step 5: Plot Male Chart
+ggplot(male_data, aes(x = Category, y = Count, fill = Response)) +
+  geom_col(position = "stack") +
+  labs(title = "Male Stroke Characteristics", x = "", y = "Count") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
+
+```{r}
+air_data <- read_sheet("https://docs.google.com/spreadsheets/d/1-gBPpmAnl6i2hHkxoL1wg3-1mhijzqe8fbETBzOiDB0/edit?gid=1067334291#gid=1067334291")
+
+malaysia_data <- air_data %>%
+  filter(Country == "Malaysia")
+
+print(malaysia_data)
+```
+```{r}
+
+
+# Good
+ggplot(filter(malaysia_data, `PM2.5 AQI Category` == "Good"),
+       aes(x = reorder(City, `PM2.5 AQI Value`), y = `PM2.5 AQI Value`)) +
+  geom_col(fill = "forestgreen") +
+  coord_flip() +
+  labs(title = "PM2.5 AQI: Good", x = "City", y = "AQI Value") +
+  theme_minimal()
+
+# Moderate
+ggplot(filter(malaysia_data, `PM2.5 AQI Category` == "Moderate"),
+       aes(x = reorder(City, `PM2.5 AQI Value`), y = `PM2.5 AQI Value`)) +
+  geom_col(fill = "goldenrod") +
+  coord_flip() +
+  labs(title = "PM2.5 AQI: Moderate", x = "City", y = "AQI Value") +
+  theme_minimal()
+
+# Unhealthy for Sensitive Groups
+ggplot(filter(malaysia_data, `PM2.5 AQI Category` == "Unhealthy for Sensitive Groups"),
+       aes(x = reorder(City, `PM2.5 AQI Value`), y = `PM2.5 AQI Value`)) +
+  geom_col(fill = "darkorange") +
+  coord_flip() +
+  labs(title = "PM2.5 AQI: Unhealthy for Sensitive Groups", x = "City", y = "AQI Value") +
+  theme_minimal()
+
+# Unhealthy
+ggplot(filter(malaysia_data, `PM2.5 AQI Category` == "Unhealthy"),
+       aes(x = reorder(City, `PM2.5 AQI Value`), y = `PM2.5 AQI Value`)) +
+  geom_col(fill = "red3") +
+  coord_flip() +
+  labs(title = "PM2.5 AQI: Unhealthy", x = "City", y = "AQI Value") +
+  theme_minimal()
+
+
+
+```
+```{r}
+
+water_data <- read_sheet("https://docs.google.com/spreadsheets/d/1unG52KhlURvzJIs-LOZQJCafY-iFiybRevL7dn7MbOg/edit?gid=1000439626#gid=1000439626")
+
+malysia_water_data <- water_data %>%
+  filter(Country == "Malaysia")
+
+print(malysia_water_data)
+
+```
+```{r}
+region_summary <- malysia_water_data %>%
+  group_by(Region) %>%
+  summarise(
+    WaterPollution = mean(WaterPollution, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Step 4: Plot bar chart of average AQI by region
+ggplot(region_summary, aes(x = reorder(Region, WaterPollution), y = WaterPollution, fill = Region)) +
+  geom_col(show.legend = FALSE) +
+  coord_flip() +
+  labs(title = "Average Water Pollution by State in Malaysia",
+       x = "State",
+       y = "Average Water Pollution") +
+  theme_minimal(base_size = 14)
+```
+```{r}
+data <- malysia_water_data %>%
+  mutate(Region = case_when(
+    City == "Kuala Lumpur" ~ "Federal Territory",
+    City == "George Town"  ~ "Penang",
+    TRUE ~ Region
+  ))
+
+# Step 3: Split by Region and plot each one
+region_list <- split(data, data$Region)
+
+# Step 4: Create plots for each region
+plots <- lapply(names(region_list), function(region_name) {
+  ggplot(region_list[[region_name]], aes(x = AirQuality, y = reorder(City, AirQuality))) +
+    geom_col(fill = "steelblue") +
+    labs(
+      title = paste("Air Quality in", region_name),
+      x = "Air Quality Index (AQI)",
+      y = "City"
+    ) +
+    theme_minimal(base_size = 14)
+})
+
+# Step 5: Print the plots (if using RMarkdown or console)
+# You can print them all at once like this:
+for (p in plots) {
+  print(p)
+}
+```
+
+
